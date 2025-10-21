@@ -5,9 +5,9 @@ import { RainbowKitCustomConnectButton } from "~~/components/helper";
 import { useOutsideClick } from "~~/hooks/helper";
 
 /**
- * Site header
+ * Site header for FHE Counter
  */
-export const Header = () => {
+export const HeaderFHECounter = () => {
   const burgerMenuRef = useRef<HTMLDetailsElement>(null);
   useOutsideClick(burgerMenuRef, () => {
     burgerMenuRef?.current?.removeAttribute("open");
