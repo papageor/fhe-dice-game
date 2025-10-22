@@ -10,9 +10,11 @@ interface TokenSwapProps {
   ethBalance: number;
   rollBalance: number;
   onSwap: (fromToken: "ETH" | "ROLL", amount: number) => void;
+  onShowOverlay?: (message: string, description?: string, showDice?: boolean) => void;
+  onHideOverlay?: () => void;
 }
 
-export function TokenSwap({ ethBalance, rollBalance, onSwap }: TokenSwapProps) {
+export function TokenSwap({ ethBalance, rollBalance, onSwap, onShowOverlay, onHideOverlay }: TokenSwapProps) {
   const [fromToken, setFromToken] = useState<"ETH" | "ROLL">("ETH");
   const [fromAmount, setFromAmount] = useState("");
   const [isSwapping, setIsSwapping] = useState(false);
@@ -39,11 +41,13 @@ export function TokenSwap({ ethBalance, rollBalance, onSwap }: TokenSwapProps) {
     }
 
     setIsSwapping(true);
+    onShowOverlay?.("Swapping Tokens...", "Confirming transaction on blockchain", true);
     await new Promise((resolve) => setTimeout(resolve, 1500));
     
     onSwap(fromToken, amount);
     setFromAmount("");
     setIsSwapping(false);
+    onHideOverlay?.();
 
     toast.success(`Swapped ${amount} ${fromToken} for ${toAmount} ${toToken}`, {
       description: "Transaction completed successfully",
@@ -55,21 +59,15 @@ export function TokenSwap({ ethBalance, rollBalance, onSwap }: TokenSwapProps) {
     setFromAmount("");
   };
 
+
   return (
     <>
-      {isSwapping && (
-        <LoadingOverlay 
-          message="Swapping Tokens..." 
-          description="Confirming transaction on blockchain"
-        />
-      )}
-      
       <div className="w-full max-w-2xl mx-auto space-y-6">
         {/* Swap Interface */}
       <Card className="bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border-2 border-primary/30 p-6">
         <div className="space-y-4">
-          {/* From Token */}
-          <div className="space-y-2">
+          {/* From Token*/}
+          <div className="space-y-2" >
             <div className="flex items-center justify-between">
               <label className="text-sm text-muted-foreground">From</label>
               <span className="text-sm text-muted-foreground">
@@ -118,7 +116,7 @@ export function TokenSwap({ ethBalance, rollBalance, onSwap }: TokenSwapProps) {
           {/* To Token */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm text-muted-foreground">To</label>
+          <label className="text-sm text-muted-foreground">To</label>
               <span className="text-sm text-muted-foreground">
                 Rate: 1 ETH = {exchangeRate} ROLL
               </span>

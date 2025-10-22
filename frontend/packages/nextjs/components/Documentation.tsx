@@ -1,14 +1,36 @@
+import { useState, useEffect } from "react";
 import { Card } from "./ui/card";
 import { Shield, Lock, Eye, Zap, CheckCircle2, ArrowRight, BookOpen, Key, Server } from "lucide-react";
 import { Button } from "./ui/button";
+import { LoadingOverlay } from "./LoadingOverlay";
+
 
 interface DocumentationProps {
   onNavigate: (page: string) => void;
 }
 
 export function Documentation({ onNavigate }: DocumentationProps) {
+  const [isLoadingDocs, setIsLoadingDocs] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading documentation
+    const timer = setTimeout(() => {
+      setIsLoadingDocs(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-12">
+    <>
+      {isLoadingDocs && (
+        <LoadingOverlay 
+          message="Loading Documentation..." 
+          description="Preparing technical guides and tutorials"
+          showDice={true}
+        />
+      )}
+      
+      <div className="w-full max-w-6xl mx-auto space-y-12">
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/30 rounded-full mb-4">
@@ -387,5 +409,6 @@ export function Documentation({ onNavigate }: DocumentationProps) {
         </div>
       </Card>
     </div>
+    </>
   );
 }

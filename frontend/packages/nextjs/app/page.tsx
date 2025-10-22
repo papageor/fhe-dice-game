@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import { BalanceCards } from "../components/BalanceCards";
 import { BreadcrumbNav } from "../components/BreadcrumbNav";
@@ -30,6 +29,24 @@ export default function Home() {
   const [ethBalance, setEthBalance] = useState(5.0);
   const [gameHistory, setGameHistory] = useState<GameRecord[]>([]);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [navigationTarget, setNavigationTarget] = useState<string | null>(null);
+
+  // Global overlay state for child components (e.g., TokenSwap in GameInterface)
+  const [globalOverlay, setGlobalOverlay] = useState<{
+    visible: boolean;
+    message?: string;
+    description?: string;
+    showDice?: boolean;
+  }>({ visible: false });
+
+  const showOverlay = (message: string, description?: string, showDice: boolean = true) => {
+    setGlobalOverlay({ visible: true, message, description, showDice });
+  };
+
+  const hideOverlay = () => {
+    setGlobalOverlay(prev => ({ ...prev, visible: false }));
+  };
 
   const handleWalletConnect = async () => {
     if (!walletConnected) {
@@ -97,17 +114,59 @@ export default function Home() {
     }
   };
 
-  const handleNavigate = (page: string) => {
+  const handleNavigate = async (page: string) => {
+    // If already on the current page, do nothing
+    if (page === currentPage) return;
+    
+    // If wallet connection is required first
     if (page === "Game" && !walletConnected) {
       handleWalletConnect();
-    } else {
-      setCurrentPage(page);
+      return;
     }
+    
+    // Start loading
+    setIsNavigating(true);
+    setNavigationTarget(page);
+    
+    // Simulate loading time
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Switch page
+    setCurrentPage(page);
+    
+    // End loading
+    setIsNavigating(false);
+    setNavigationTarget(null);
   };
+
+  
 
   return (
     <div className="min-h-screen bg-background">
-      {isConnecting && <LoadingOverlay message="Connecting to Wallet..." description="Please approve in MetaMask" />}
+      {isConnecting && 
+      <LoadingOverlay 
+      message="Connecting to Wallet..." 
+      description="Please approve in MetaMask" 
+      showDice={true} 
+      />}
+      
+      {/* Navigation Loading */}
+      {isNavigating && (
+        <LoadingOverlay 
+          message={`Loading ${navigationTarget}...`}
+          description={`Preparing ${navigationTarget?.toLowerCase()} interface`}
+          showDice={true}
+        />
+      )}
+
+      {/* Global Loading Overlay (for actions like TokenSwap) */}
+      {globalOverlay.visible && (
+        <LoadingOverlay
+          message={globalOverlay.message}
+          description={globalOverlay.description}
+          showDice={globalOverlay.showDice}
+        />
+      )}
 
       <HeaderDiceGame
         currentPage={currentPage}
@@ -121,15 +180,27 @@ export default function Home() {
         onSwitchAccount={handleSwitchAccount}
       />
 
-      <main className="container mx-auto px-4 py-8">
-        <BreadcrumbNav currentPage={currentPage} onNavigate={handleNavigate} />
+      {/* Hero Section - Full Width */}
+      {currentPage === "Home" && (
+        <div className="w-full">
+          <LandingPage onConnectWallet={handleWalletConnect} onNavigate={handleNavigate} />
+        </div>
+      )}
 
-        {currentPage === "Home" && <LandingPage onConnectWallet={handleWalletConnect} onNavigate={handleNavigate} />}
+      <main className="container mx-auto px-4 ">
+        <BreadcrumbNav currentPage={currentPage} onNavigate={handleNavigate} />
 
         {currentPage === "Game" && (
           <div className="space-y-8">
             <BalanceCards rollBalance={rollBalance} ethBalance={ethBalance} />
-            <GameInterface rollBalance={rollBalance} ethBalance={ethBalance} onRoll={handleRoll} onSwap={handleSwap} />
+            <GameInterface
+              rollBalance={rollBalance}
+              ethBalance={ethBalance}
+              onRoll={handleRoll}
+              onSwap={handleSwap}
+              onShowOverlay={showOverlay}
+              onHideOverlay={hideOverlay}
+            />
           </div>
         )}
 

@@ -6,6 +6,7 @@ import {
   LogOut,
   RefreshCw,
   Coins,
+  Home,
 } from "lucide-react";
 import { Button } from "./ui/button";
 
@@ -79,16 +80,17 @@ export function HeaderDiceGame({
 
         {/* Navigation - Center */}
         <nav className="hidden md:flex items-center gap-1">
-          {["Game", "History", "Docs"].map((page) => (
+          {["Home", "Game", "History", "Docs"].map((page) => (
             <button
               key={page}
               onClick={() => onNavigate(page)}
-              className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+              className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 ${
                 currentPage === page
                   ? "bg-gradient-to-r from-[#fde047]/20 to-[#fed7aa]/20 text-[#fde047] border border-[#fde047]/30 shadow-lg shadow-[#fde047]/10"
                   : "text-[#d4d4d4] hover:bg-[#404040]/50 hover:text-[#fef3c7]"
               }`}
             >
+              {page === "Home" && <Home className="h-4 w-4" />}
               {page}
             </button>
           ))}
@@ -209,16 +211,17 @@ export function HeaderDiceGame({
 
       {/* Mobile Navigation */}
       <nav className="md:hidden flex items-center justify-center gap-1 pb-3 px-4">
-        {["Game", "History", "Docs"].map((page) => (
+        {["Home", "Game", "History", "Docs"].map((page) => (
           <button
             key={page}
             onClick={() => onNavigate(page)}
-            className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
+            className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 text-sm flex items-center justify-center gap-1 ${
               currentPage === page
                 ? "bg-gradient-to-r from-[#fde047]/20 to-[#fed7aa]/20 text-[#fde047] border border-[#fde047]/30"
                 : "text-[#d4d4d4] hover:bg-[#404040]/50"
             }`}
           >
+            {page === "Home" && <Home className="h-3 w-3" />}
             {page}
           </button>
         ))}

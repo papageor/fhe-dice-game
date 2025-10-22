@@ -1,7 +1,10 @@
+
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Shield, Zap, Lock, TrendingUp, Dices } from "lucide-react";
 import { Dice3D } from "./Dice3D";
+import { LoadingOverlay } from "./LoadingOverlay";
+import { useState } from "react";
 
 interface LandingPageProps {
   onConnectWallet: () => void;
@@ -9,10 +12,28 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onConnectWallet, onNavigate }: LandingPageProps) {
+  const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
+
+  const handleNavigateWithLoading = async (page: string) => {
+    setIsLoadingFeatures(true);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    onNavigate(page);
+    setIsLoadingFeatures(false);
+  };
+
   return (
-    <div className="w-full space-y-16 py-8">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
+    <>
+      {isLoadingFeatures && (
+        <LoadingOverlay 
+          message="Loading Features..." 
+          description="Preparing game interface"
+          showDice={true}
+        />
+      )}
+      
+      <div className="w-full">
+      {/* Hero Section - Full Width */}
+      <div className="relative overflow-hidden w-full">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent" />
         <div className="relative max-w-6xl mx-auto px-4 py-16 md:py-24 text-center">
           <div className="inline-block mb-6">
@@ -53,7 +74,7 @@ export function LandingPage({ onConnectWallet, onNavigate }: LandingPageProps) {
       </div>
 
       {/* Features */}
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Encrypted Dice Roll?</h2>
           <p className="text-muted-foreground text-lg">
@@ -105,7 +126,7 @@ export function LandingPage({ onConnectWallet, onNavigate }: LandingPageProps) {
       </div>
 
       {/* How It Works */}
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
         </div>
@@ -144,7 +165,7 @@ export function LandingPage({ onConnectWallet, onNavigate }: LandingPageProps) {
       </div>
 
       {/* CTA Section */}
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-4xl mx-auto px-4 py-16">
         <Card className="bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm border-2 border-primary/30 p-8 md:p-12 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Roll?</h2>
           <p className="text-muted-foreground text-lg mb-8">
@@ -159,7 +180,7 @@ export function LandingPage({ onConnectWallet, onNavigate }: LandingPageProps) {
               Start Playing
             </Button>
             <Button
-              onClick={() => onNavigate("Docs")}
+              onClick={() => handleNavigateWithLoading("Docs")}
               size="lg"
               variant="outline"
               className="h-14 px-8 border-primary/50 hover:bg-primary/10"
@@ -171,19 +192,19 @@ export function LandingPage({ onConnectWallet, onNavigate }: LandingPageProps) {
           {/* Quick Navigation Links */}
           <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm">
             <button
-              onClick={() => onNavigate("Game")}
+              onClick={() => handleNavigateWithLoading("Game")}
               className="text-[#a3a3a3] hover:text-[#fde047] transition-colors duration-200"
             >
               Play Dice →
             </button>
             <button
-              onClick={() => onNavigate("History")}
+              onClick={() => handleNavigateWithLoading("History")}
               className="text-[#a3a3a3] hover:text-[#fde047] transition-colors duration-200"
             >
               View History →
             </button>
             <button
-              onClick={() => onNavigate("Docs")}
+              onClick={() => handleNavigateWithLoading("Docs")}
               className="text-[#a3a3a3] hover:text-[#fde047] transition-colors duration-200"
             >
               Documentation →
@@ -192,5 +213,6 @@ export function LandingPage({ onConnectWallet, onNavigate }: LandingPageProps) {
         </Card>
       </div>
     </div>
+    </>
   );
 }

@@ -44,9 +44,9 @@ export function GameHistory({ records }: GameHistoryProps) {
     <>
       {isLoading && (
         <LoadingOverlay 
-          message="Loading Game History..." 
+          message="Loading History..." 
           description="Fetching your recent games from blockchain"
-          showDice
+          showDice={true}
         />
       )}
       

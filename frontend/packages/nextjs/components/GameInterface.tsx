@@ -12,9 +12,11 @@ interface GameInterfaceProps {
   ethBalance: number;
   onRoll: (bet: number, result: { diceValues: number[]; win: boolean; payout: number }) => void;
   onSwap: (fromToken: "ETH" | "ROLL", amount: number) => void;
+  onShowOverlay?: (message: string, description?: string, showDice?: boolean) => void;
+  onHideOverlay?: () => void;
 }
 
-export function GameInterface({ rollBalance, ethBalance, onRoll, onSwap }: GameInterfaceProps) {
+export function GameInterface({ rollBalance, ethBalance, onRoll, onSwap, onShowOverlay, onHideOverlay }: GameInterfaceProps) {
   const [diceMode, setDiceMode] = useState<1 | 2 | 3>(1);
   const [betAmount, setBetAmount] = useState("10");
   const [isRolling, setIsRolling] = useState(false);
@@ -101,11 +103,13 @@ export function GameInterface({ rollBalance, ethBalance, onRoll, onSwap }: GameI
     }
 
     setIsSwapping(true);
+    onShowOverlay?.("Swapping Tokens...", "Confirming transaction on blockchain", true);
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     onSwap(fromToken, amount);
     setSwapAmount("");
     setIsSwapping(false);
+    onHideOverlay?.();
 
     toast.success(`Swapped ${amount} ${fromToken} for ${toAmount} ${toToken}`, {
       description: "Transaction completed successfully",
@@ -332,14 +336,14 @@ export function GameInterface({ rollBalance, ethBalance, onRoll, onSwap }: GameI
       {/* Swap Section - 30% */}
       <div className="flex-[3]">
         <Card className="bg-gradient-to-br from-[#2a2a2a]/60 to-[#1a1a1a]/40 backdrop-blur-sm border-2 border-[#fde047]/30 p-6 shadow-2xl shadow-[#fde047]/10 lg:sticky lg:top-24">
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center gap-2 mb-4">
               <ArrowDownUp className="h-5 w-5 text-[#fde047] drop-shadow-[0_0_6px_rgba(253,224,71,0.4)]" />
               <h3 className="font-semibold text-[#fde047]">Token Swap</h3>
             </div>
 
             {/* From Token */}
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <label className="text-sm text-[#d4d4d4]">From</label>
                 <span className="text-sm text-[#a3a3a3]">
@@ -432,7 +436,7 @@ export function GameInterface({ rollBalance, ethBalance, onRoll, onSwap }: GameI
         </Card>
       </div>
 
-      {isSwapping && <LoadingOverlay message="Swapping Tokens..." description="Confirming transaction on blockchain" />}
+      {/* {isSwapping && <LoadingOverlay message="Swapping Tokens..." description="Confirming transaction on blockchain" />} */}
     </div>
   );
 }
