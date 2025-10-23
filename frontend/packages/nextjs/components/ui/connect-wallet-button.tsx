@@ -31,12 +31,7 @@ export const ConnectWalletButton = ({
       {({ account, chain, openConnectModal, mounted }) => {
         const connected = mounted && account && chain;
 
-        // If wallet is connected, execute callback if provided
-        if (connected && onConnected) {
-          onConnected();
-        }
-
-        // Only show connect button if not connected
+        // If not connected, show connect button
         if (!connected) {
           return (
             <Button onClick={openConnectModal} size={size} variant={variant} className={cn(className)} type="button">
@@ -46,7 +41,17 @@ export const ConnectWalletButton = ({
           );
         }
 
-        // If connected, return null (parent component handles connected state)
+        // If connected and onConnected callback provided, execute it and show different button
+        if (connected && onConnected) {
+          return (
+            <Button onClick={onConnected} size={size} variant={variant} className={cn(className)} type="button">
+              {icon}
+              {label.replace("Connect Wallet", "Start Game").replace("Start Playing", "Continue Playing")}
+            </Button>
+          );
+        }
+
+        // If connected but no callback, return null
         return null;
       }}
     </ConnectButton.Custom>

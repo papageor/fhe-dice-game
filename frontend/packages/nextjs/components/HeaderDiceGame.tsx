@@ -7,24 +7,20 @@ interface HeaderProps {
   currentPage: string;
   onNavigate: (page: string) => void;
   walletConnected: boolean;
-  onWalletConnect: () => void;
   walletAddress?: string;
   ethBalance?: number;
   rollBalance?: number;
   onDisconnect?: () => void;
-  onSwitchAccount?: () => void;
 }
 
 export function HeaderDiceGame({
   currentPage,
   onNavigate,
   walletConnected,
-  onWalletConnect,
   walletAddress,
   ethBalance = 0,
   rollBalance = 0,
   onDisconnect,
-  onSwitchAccount,
 }: HeaderProps) {
   const [showWalletMenu, setShowWalletMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -45,13 +41,6 @@ export function HeaderDiceGame({
     setShowWalletMenu(false);
     if (onDisconnect) {
       onDisconnect();
-    }
-  };
-
-  const handleSwitchAccount = () => {
-    setShowWalletMenu(false);
-    if (onSwitchAccount) {
-      onSwitchAccount();
     }
   };
 
@@ -157,7 +146,7 @@ export function HeaderDiceGame({
                   {/* Actions Section */}
                   <div className="p-2">
                     <button
-                      onClick={handleSwitchAccount}
+                      onClick={() => setShowWalletMenu(false)}
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#404040]/50 hover:scale-105 transition-all duration-200 text-left group"
                     >
                       <RefreshCw className="h-4 w-4 text-[#fde047] group-hover:text-[#fef3c7]" />
@@ -179,7 +168,6 @@ export function HeaderDiceGame({
               label="Connect Wallet"
               icon={<Wallet className="mr-2 h-4 w-4" />}
               className="bg-gradient-to-r from-[#fde047] to-[#fbbf24] text-black hover:opacity-90 shadow-lg shadow-[#fde047]/30"
-              onConnected={onWalletConnect}
             />
           )}
         </div>

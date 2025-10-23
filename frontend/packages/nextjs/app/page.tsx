@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BalanceCards } from "../components/BalanceCards";
 import { BreadcrumbNav } from "../components/BreadcrumbNav";
 import { Documentation } from "../components/Documentation";
@@ -11,6 +11,7 @@ import { HeaderDiceGame } from "../components/HeaderDiceGame";
 import { LandingPage } from "../components/LandingPage";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import { Toaster } from "../components/ui/sonner";
+import { useAccount } from "wagmi";
 
 interface GameRecord {
   id: string;
@@ -23,6 +24,8 @@ interface GameRecord {
 }
 
 export default function Home() {
+  const { address, isConnected } = useAccount();
+
   const [currentPage, setCurrentPage] = useState<string>("Home");
   const [walletConnected, setWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | undefined>();
@@ -32,6 +35,12 @@ export default function Home() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [navigationTarget, setNavigationTarget] = useState<string | null>(null);
+
+  // Update wallet state when account changes
+  useEffect(() => {
+    setWalletConnected(isConnected);
+    setWalletAddress(address);
+  }, [isConnected, address]);
 
   // Global overlay state for child components (e.g., TokenSwap in GameInterface)
   const [globalOverlay, setGlobalOverlay] = useState<{
@@ -49,38 +58,10 @@ export default function Home() {
     setGlobalOverlay(prev => ({ ...prev, visible: false }));
   };
 
-  const handleWalletConnect = async () => {
-    if (!walletConnected) {
-      setIsConnecting(true);
-      // Simulate wallet connection delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      setWalletConnected(true);
-      setWalletAddress("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
-      setIsConnecting(false);
-
-      if (currentPage === "Home") {
-        setCurrentPage("Game");
-      }
-    }
-  };
-
   const handleWalletDisconnect = () => {
-    setWalletConnected(false);
-    setWalletAddress(undefined);
+    // Wallet disconnection is now handled by the wallet provider
+    // Just navigate back to home if needed
     setCurrentPage("Home");
-  };
-
-  const handleSwitchAccount = () => {
-    // Simulate switching to different accounts
-    const accounts = [
-      "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-      "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed",
-      "0x14723A09ACff6D2A60DcdF7aA4AFf308FDDC160C",
-    ];
-    const currentIndex = accounts.indexOf(walletAddress || "");
-    const nextIndex = (currentIndex + 1) % accounts.length;
-    setWalletAddress(accounts[nextIndex]);
   };
 
   const handleRoll = (stake: number, result: { diceValues: number[]; win: boolean; payout: number }) => {
@@ -121,7 +102,7 @@ export default function Home() {
 
     // If wallet connection is required first
     if (page === "Game" && !walletConnected) {
-      handleWalletConnect();
+      // Wallet connection is now handled by ConnectWalletButton
       return;
     }
 
@@ -168,18 +149,16 @@ export default function Home() {
         currentPage={currentPage}
         onNavigate={handleNavigate}
         walletConnected={walletConnected}
-        onWalletConnect={handleWalletConnect}
         walletAddress={walletAddress}
         ethBalance={ethBalance}
         rollBalance={rollBalance}
         onDisconnect={handleWalletDisconnect}
-        onSwitchAccount={handleSwitchAccount}
       />
 
       {/* Hero Section - Full Width */}
       {currentPage === "Home" && (
         <div className="w-full">
-          <LandingPage onConnectWallet={handleWalletConnect} onNavigate={handleNavigate} />
+          <LandingPage onNavigate={handleNavigate} />
         </div>
       )}
 

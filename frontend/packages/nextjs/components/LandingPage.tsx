@@ -7,11 +7,10 @@ import { ConnectWalletButton } from "./ui/connect-wallet-button";
 import { Dices, Lock, Shield, TrendingUp, Zap } from "lucide-react";
 
 interface LandingPageProps {
-  onConnectWallet: () => void;
   onNavigate: (page: string) => void;
 }
 
-export function LandingPage({ onConnectWallet, onNavigate }: LandingPageProps) {
+export function LandingPage({ onNavigate }: LandingPageProps) {
   const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
 
   const handleNavigateWithLoading = async (page: string) => {
@@ -59,7 +58,7 @@ export function LandingPage({ onConnectWallet, onNavigate }: LandingPageProps) {
               icon={<Dices className="mr-2 h-6 w-6" />}
               size="lg"
               className="h-16 px-12 text-lg bg-gradient-to-r from-[#fde047] via-[#fbbf24] to-[#f59e0b] text-black hover:scale-105 transition-transform shadow-2xl shadow-primary/50"
-              onConnected={onConnectWallet}
+              onConnected={() => onNavigate("Game")}
             />
 
             <p className="text-sm text-muted-foreground mt-4">
@@ -165,7 +164,7 @@ export function LandingPage({ onConnectWallet, onNavigate }: LandingPageProps) {
                 label="Start Playing"
                 size="lg"
                 className="h-14 px-8 bg-gradient-to-r from-[#fde047] via-[#fbbf24] to-[#f59e0b] text-black hover:scale-105 transition-transform shadow-lg shadow-primary/30"
-                onConnected={onConnectWallet}
+                onConnected={() => onNavigate("Game")}
               />
               <Button
                 onClick={() => handleNavigateWithLoading("Docs")}
