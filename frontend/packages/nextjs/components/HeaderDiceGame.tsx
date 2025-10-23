@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
+import { ConnectWalletButton } from "./ui/connect-wallet-button";
 import { ChevronDown, Coins, Dices, Home, LogOut, RefreshCw, Wallet } from "lucide-react";
 
 interface HeaderProps {
@@ -174,13 +175,12 @@ export function HeaderDiceGame({
               )}
             </div>
           ) : (
-            <Button
-              onClick={onWalletConnect}
+            <ConnectWalletButton
+              label="Connect Wallet"
+              icon={<Wallet className="mr-2 h-4 w-4" />}
               className="bg-gradient-to-r from-[#fde047] to-[#fbbf24] text-black hover:opacity-90 shadow-lg shadow-[#fde047]/30"
-            >
-              <Wallet className="mr-2 h-4 w-4" />
-              Connect Wallet
-            </Button>
+              onConnected={onWalletConnect}
+            />
           )}
         </div>
       </div>
