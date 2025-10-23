@@ -10,6 +10,7 @@ dist/
 types/
 deployments/
 tmp/
+types/
 
 # Coverage
 .coverage_artifacts/

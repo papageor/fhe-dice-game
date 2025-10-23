@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import { BalanceCards } from "../components/BalanceCards";
 import { BreadcrumbNav } from "../components/BreadcrumbNav";
@@ -16,7 +17,7 @@ interface GameRecord {
   timestamp: Date;
   diceMode: number;
   diceValues: number[];
-  bet: number;
+  stake: number;
   result: "win" | "loss";
   payout: number;
 }
@@ -82,12 +83,12 @@ export default function Home() {
     setWalletAddress(accounts[nextIndex]);
   };
 
-  const handleRoll = (bet: number, result: { diceValues: number[]; win: boolean; payout: number }) => {
+  const handleRoll = (stake: number, result: { diceValues: number[]; win: boolean; payout: number }) => {
     // Update balance
     if (result.win) {
-      setRollBalance(prev => prev - bet + result.payout);
+      setRollBalance(prev => prev - stake + result.payout);
     } else {
-      setRollBalance(prev => prev - bet);
+      setRollBalance(prev => prev - stake);
     }
 
     // Add to history
@@ -96,7 +97,7 @@ export default function Home() {
       timestamp: new Date(),
       diceMode: result.diceValues.length,
       diceValues: result.diceValues,
-      bet,
+      stake,
       result: result.win ? "win" : "loss",
       payout: result.payout,
     };
@@ -117,42 +118,37 @@ export default function Home() {
   const handleNavigate = async (page: string) => {
     // If already on the current page, do nothing
     if (page === currentPage) return;
-    
+
     // If wallet connection is required first
     if (page === "Game" && !walletConnected) {
       handleWalletConnect();
       return;
     }
-    
+
     // Start loading
     setIsNavigating(true);
     setNavigationTarget(page);
-    
+
     // Simulate loading time
     await new Promise(resolve => setTimeout(resolve, 800));
-    
+
     // Switch page
     setCurrentPage(page);
-    
+
     // End loading
     setIsNavigating(false);
     setNavigationTarget(null);
   };
 
-  
-
   return (
     <div className="min-h-screen bg-background">
-      {isConnecting && 
-      <LoadingOverlay 
-      message="Connecting to Wallet..." 
-      description="Please approve in MetaMask" 
-      showDice={true} 
-      />}
-      
+      {isConnecting && (
+        <LoadingOverlay message="Connecting to Wallet..." description="Please approve in MetaMask" showDice={true} />
+      )}
+
       {/* Navigation Loading */}
       {isNavigating && (
-        <LoadingOverlay 
+        <LoadingOverlay
           message={`Loading ${navigationTarget}...`}
           description={`Preparing ${navigationTarget?.toLowerCase()} interface`}
           showDice={true}
