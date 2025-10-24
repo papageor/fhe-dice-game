@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
 import { ConnectWalletButton } from "./ui/connect-wallet-button";
-import { ChevronDown, Coins, Dices, Home, LogOut, RefreshCw, Wallet } from "lucide-react";
+import { ArrowLeftRight, ChevronDown, Coins, Dices, Home, LogOut, Wallet } from "lucide-react";
+import { useAccount, useDisconnect, useSwitchChain } from "wagmi";
 
 interface HeaderProps {
   currentPage: string;
@@ -24,6 +25,9 @@ export function HeaderDiceGame({
 }: HeaderProps) {
   const [showWalletMenu, setShowWalletMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { disconnect } = useDisconnect();
+  const { switchChain } = useSwitchChain();
+  const { chain } = useAccount();
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -39,6 +43,7 @@ export function HeaderDiceGame({
 
   const handleDisconnect = () => {
     setShowWalletMenu(false);
+    disconnect();
     if (onDisconnect) {
       onDisconnect();
     }
@@ -145,13 +150,33 @@ export function HeaderDiceGame({
 
                   {/* Actions Section */}
                   <div className="p-2">
-                    <button
-                      onClick={() => setShowWalletMenu(false)}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#404040]/50 hover:scale-105 transition-all duration-200 text-left group"
-                    >
-                      <RefreshCw className="h-4 w-4 text-[#fde047] group-hover:text-[#fef3c7]" />
-                      <span className="text-sm text-[#ffffff] group-hover:text-[#fef3c7]">Switch Account</span>
-                    </button>
+                    {/* Network Switch Buttons */}
+                    {chain?.id !== 31337 && (
+                      <button
+                        onClick={() => {
+                          setShowWalletMenu(false);
+                          switchChain?.({ chainId: 31337 });
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#404040]/50 hover:scale-105 transition-all duration-200 text-left group"
+                      >
+                        <ArrowLeftRight className="h-4 w-4 text-[#fde047] group-hover:text-[#fef3c7]" />
+                        <span className="text-sm text-[#ffffff] group-hover:text-[#fef3c7]">Switch to Hardhat</span>
+                      </button>
+                    )}
+
+                    {chain?.id !== 11155111 && (
+                      <button
+                        onClick={() => {
+                          setShowWalletMenu(false);
+                          switchChain?.({ chainId: 11155111 });
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#404040]/50 hover:scale-105 transition-all duration-200 text-left group"
+                      >
+                        <ArrowLeftRight className="h-4 w-4 text-[#fde047] group-hover:text-[#fef3c7]" />
+                        <span className="text-sm text-[#ffffff] group-hover:text-[#fef3c7]">Switch to Sepolia</span>
+                      </button>
+                    )}
+
                     <button
                       onClick={handleDisconnect}
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-500/10 transition-colors text-left"
