@@ -17,8 +17,8 @@ const generatedContractComment = `
  */
 `;
 
-const DEPLOYMENTS_DIR = "./packages/hardhat/deployments";
-const ARTIFACTS_DIR = "./packages/hardhat/artifacts";
+const DEPLOYMENTS_DIR = "../dice-contracts/deployments";
+const ARTIFACTS_DIR = "../dice-contracts/artifacts";
 const TARGET_DIR = "./packages/nextjs/contracts/";
 
 function getDirectories(path: string) {
