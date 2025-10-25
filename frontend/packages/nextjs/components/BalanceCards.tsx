@@ -1,12 +1,17 @@
-import { TrendingUp, Coins } from "lucide-react";
+import { useEncryptedDiceGame } from "../hooks/useEncryptedDiceGame";
+import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import { Coins, RefreshCw, TrendingUp } from "lucide-react";
+import { useAccount, useBalance } from "wagmi";
 
-interface BalanceCardsProps {
-  rollBalance: number;
-  ethBalance: number;
-}
+export function BalanceCards() {
+  const { address } = useAccount();
+  const { data: ethBalanceData } = useBalance({ address });
 
-export function BalanceCards({ rollBalance, ethBalance }: BalanceCardsProps) {
+  const { balance: rollBalance, refreshBalance, isLoading, isContractReady } = useEncryptedDiceGame();
+
+  const ethBalance = ethBalanceData ? parseFloat(ethBalanceData.formatted) : 0;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
       {/* ROLL Balance */}
@@ -21,14 +26,21 @@ export function BalanceCards({ rollBalance, ethBalance }: BalanceCardsProps) {
               </div>
               <span className="text-[#d4d4d4]">ROLL Balance</span>
             </div>
-            <TrendingUp className="h-4 w-4 text-green-500" />
+            <div className="flex items-center gap-2">
+              {isContractReady && (
+                <Button onClick={refreshBalance} disabled={isLoading} size="sm" variant="ghost" className="h-8 w-8 p-0">
+                  <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                </Button>
+              )}
+              <TrendingUp className="h-4 w-4 text-green-500" />
+            </div>
           </div>
           <div className="mt-2">
             <div className="text-3xl font-bold bg-gradient-to-r from-[#fde047] via-[#fef3c7] to-[#fed7aa] bg-clip-text text-transparent drop-shadow-sm">
-              {rollBalance.toLocaleString()}
+              {isContractReady ? rollBalance.toLocaleString() : "---"}
             </div>
             <div className="text-sm text-[#a3a3a3] mt-1">
-              ≈ ${(rollBalance * 0.001).toFixed(2)} USD
+              {isContractReady ? `≈ $${(rollBalance * 0.001).toFixed(2)} USD` : "Connect wallet to view balance"}
             </div>
           </div>
         </div>
@@ -53,11 +65,9 @@ export function BalanceCards({ rollBalance, ethBalance }: BalanceCardsProps) {
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-3xl font-bold text-[#ffffff]">
-              {ethBalance.toFixed(4)}
-            </div>
+            <div className="text-3xl font-bold text-[#ffffff]">{address ? ethBalance.toFixed(4) : "---"}</div>
             <div className="text-sm text-[#a3a3a3] mt-1">
-              ≈ ${(ethBalance * 2500).toFixed(2)} USD
+              {address ? `≈ $${(ethBalance * 2500).toFixed(2)} USD` : "Connect wallet to view balance"}
             </div>
           </div>
         </div>

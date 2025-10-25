@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useEncryptedDiceGame } from "../hooks/useEncryptedDiceGame";
 import { Dice3D } from "./Dice3D";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { Button } from "./ui/button";
@@ -6,25 +7,13 @@ import { Card } from "./ui/card";
 import { Input } from "./ui/input";
 import { ArrowDownUp, Coins, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { useEncryptedDiceGame } from "~~/hooks/useEncryptedDiceGame";
 
 interface GameInterfaceProps {
-  rollBalance: number;
-  ethBalance: number;
-  onRoll: (stake: number, result: { diceValues: number[]; win: boolean; payout: number }) => void;
-  onSwap: (fromToken: "ETH" | "ROLL", amount: number) => void;
   onShowOverlay?: (message: string, description?: string, showDice?: boolean) => void;
   onHideOverlay?: () => void;
 }
 
-export function GameInterface({
-  rollBalance,
-  ethBalance,
-  onRoll,
-  onSwap,
-  onShowOverlay,
-  onHideOverlay,
-}: GameInterfaceProps) {
+export function GameInterface({ onShowOverlay, onHideOverlay }: GameInterfaceProps) {
   const [diceMode, setDiceMode] = useState<1 | 2 | 3>(1);
   const [stakeAmount, setStakeAmount] = useState("10");
   const [isRolling, setIsRolling] = useState(false);
@@ -37,25 +26,46 @@ export function GameInterface({
   const [swapAmount, setSwapAmount] = useState("");
   const [isSwapping, setIsSwapping] = useState(false);
 
-  // Smart contract integration
+  // Smart contract integration - now using real hook
   const {
+    // State
     isLoading: isContractLoading,
     error: contractError,
+    gameHistory,
+    encryptedBalance,
+    gameCounter,
+    contractAddress,
+    isContractAvailable,
+
+    // Actions
     startGame,
     resolveGame,
     swapETHForROLL,
     mintTokens,
-    gameHistory,
-    isContractAvailable,
+    decryptBalance,
+    getGameDetails,
+    refresh,
     clearError,
   } = useEncryptedDiceGame();
 
-  // Clear contract errors when component mounts
+  // Get decrypted balance (provide a default value)
+  const balance = decryptBalance() || 0;
+  const isContractReady = isContractAvailable;
+  const games = gameHistory || []; // Clear contract errors when component mounts
   useEffect(() => {
     if (contractError) {
       clearError();
     }
   }, [contractError, clearError]);
+
+  // Show contract errors as toasts
+  useEffect(() => {
+    if (contractError) {
+      toast.error("Contract Error", {
+        description: contractError,
+      });
+    }
+  }, [contractError]);
 
   const handleRoll = async () => {
     const stake = parseFloat(stakeAmount);
@@ -65,10 +75,16 @@ export function GameInterface({
     }
 
     // Check if smart contract is available
-    if (!isContractAvailable) {
-      toast.error("Smart contract not available. Using demo mode.");
-      // Fallback to original hardcoded logic
-      await handleRollFallback(stake);
+    if (!isContractReady) {
+      toast.error("Smart contract not ready. Please check your network connection.");
+      return;
+    }
+
+    // Check balance
+    if (balance < stake) {
+      toast.error("Insufficient ROLL balance", {
+        description: `You need ${stake} ROLL but only have ${balance} ROLL`,
+      });
       return;
     }
 
@@ -76,77 +92,59 @@ export function GameInterface({
     setLastResult(null);
 
     try {
-      // Use smart contract
-      await startGame(diceMode, prediction, stake);
+      onShowOverlay?.("Starting Game...", "Encrypting your prediction and stake", false);
 
-      // For now, simulate dice rolling visually while contract processes
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Start the game on smart contract
+      const gameId = await startGame(diceMode, prediction, stake);
 
-      // Generate visual dice for display (actual results come from contract)
-      const visualResults = Array.from({ length: diceMode }, () => Math.floor(Math.random() * 6) + 1);
-      setDiceValues(visualResults);
+      if (gameId !== null) {
+        onShowOverlay?.("Game Started!", `Game ID: ${gameId}. Rolling dice...`, true);
 
-      toast.success("Game started! Resolving dice...", {
-        description: "Transaction submitted to blockchain",
+        // Wait a moment for visual effect
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Auto-resolve the game
+        await resolveGame(Number(gameId));
+
+        // Refresh data to get latest results
+        await refresh();
+
+        // Find the resolved game
+        const resolvedGame = games.find((g: any) => g.id === gameId);
+        if (resolvedGame) {
+          setDiceValues(resolvedGame.result || []);
+          setLastResult({
+            win: resolvedGame.won || false,
+            payout: resolvedGame.won ? stake * 1.95 : 0,
+          });
+
+          toast.success(resolvedGame.won ? "You won!" : "You lost!", {
+            description: `Dice: ${resolvedGame.result?.join(", ")} | ${resolvedGame.won ? `Won ${stake * 1.95} ROLL` : `Lost ${stake} ROLL`}`,
+          });
+        }
+
+        onHideOverlay?.();
+      }
+    } catch (error: any) {
+      console.error("Error in game:", error);
+      toast.error("Game Failed", {
+        description: error?.message || "Unknown error occurred",
       });
-    } catch (error) {
-      console.error("Error starting game:", error);
-      toast.error("Failed to start game");
-      // Fallback to demo mode
-      await handleRollFallback(stake);
+      onHideOverlay?.();
     } finally {
       setIsRolling(false);
     }
   };
 
+  // Fallback demo mode (keeping for backup)
   // Fallback function for demo mode
-  const handleRollFallback = async (stake: number) => {
-    if (stake > rollBalance) {
-      toast.error("Insufficient ROLL balance");
-      return;
-    }
-
-    setIsRolling(true);
-    setLastResult(null);
-
-    // Simulate rolling
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Generate random dice values
-    const results = Array.from({ length: diceMode }, () => Math.floor(Math.random() * 6) + 1);
-    setDiceValues(results);
-
-    // Calculate win based on prediction
-    const sum = results.reduce((a, b) => a + b, 0);
-    const isEven = sum % 2 === 0;
-    const win = (prediction === "even" && isEven) || (prediction === "odd" && !isEven);
-    const payout = win ? stake * 1.95 : 0;
-
-    setLastResult({ win, payout });
-    onRoll(stake, { diceValues: results, win, payout });
-
-    setIsRolling(false);
-
-    // Show toast
-    const sumType = isEven ? "Even" : "Odd";
-    if (win) {
-      toast.success(`You won ${payout.toFixed(2)} ROLL! 🎉`, {
-        description: `Dice: ${results.join(", ")} (Sum: ${sum} - ${sumType})`,
-      });
-    } else {
-      toast.error(`You lost ${stake} ROLL`, {
-        description: `Dice: ${results.join(", ")} (Sum: ${sum} - ${sumType})`,
-      });
-    }
-  };
-
   const diceSizes = {
     1: 120,
     2: 80,
     3: 60,
   };
 
-  // Swap functionality
+  // Swap functionality using real contract
   const exchangeRate = 1000; // 1 ETH = 1000 ROLL
   const toToken = fromToken === "ETH" ? "ROLL" : "ETH";
   const toAmount = swapAmount
@@ -155,7 +153,8 @@ export function GameInterface({
       : (parseFloat(swapAmount) / exchangeRate).toFixed(4)
     : "";
 
-  const fromBalance = fromToken === "ETH" ? ethBalance : rollBalance;
+  // Use real balance from contract
+  const fromBalance = fromToken === "ETH" ? 0 : balance; // ETH balance would come from wagmi
 
   const handleSwap = async () => {
     const amount = parseFloat(swapAmount);
@@ -163,37 +162,58 @@ export function GameInterface({
       toast.error("Please enter a valid amount");
       return;
     }
-    if (amount > fromBalance) {
-      toast.error(`Insufficient ${fromToken} balance`);
+
+    if (!isContractReady) {
+      toast.error("Smart contract not ready. Please check your network connection.");
       return;
     }
 
     setIsSwapping(true);
-    onShowOverlay?.("Swapping Tokens...", "Confirming transaction on blockchain", true);
+    onShowOverlay?.("Swapping Tokens...", "Confirming transaction on blockchain", false);
 
     try {
-      if (isContractAvailable && fromToken === "ETH") {
+      if (fromToken === "ETH") {
         // Use smart contract for ETH to ROLL swap
         await swapETHForROLL(amount);
-        toast.success(`Swapped ${amount} ${fromToken} for ${toAmount} ${toToken}`, {
-          description: "Transaction submitted to blockchain",
+        toast.success(`Swapped ${amount} ETH for ${amount * exchangeRate} ROLL`, {
+          description: "Transaction confirmed on blockchain",
         });
+
+        // Refresh balance
+        await refresh();
       } else {
-        // Fallback to demo mode
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        onSwap(fromToken, amount);
-        toast.success(`Swapped ${amount} ${fromToken} for ${toAmount} ${toToken}`, {
-          description: "Demo transaction completed",
-        });
+        toast.error("ROLL to ETH swap not yet implemented");
+        // Would implement ROLL to ETH swap here
       }
 
       setSwapAmount("");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Swap error:", error);
-      toast.error("Swap failed. Please try again.");
+      toast.error("Swap failed", {
+        description: error?.message || "Please try again",
+      });
     } finally {
       setIsSwapping(false);
       onHideOverlay?.();
+    }
+  };
+
+  // Handle minting tokens for testing
+  const handleMintTokens = async () => {
+    if (!isContractReady) {
+      toast.error("Smart contract not ready");
+      return;
+    }
+
+    try {
+      await mintTokens(1000); // Mint 1000 ROLL for testing
+      toast.success("Minted 1000 ROLL tokens for testing!");
+      await refresh();
+    } catch (error: any) {
+      console.error("Mint error:", error);
+      toast.error("Failed to mint tokens", {
+        description: error?.message || "Please try again",
+      });
     }
   };
 
@@ -312,7 +332,7 @@ export function GameInterface({
                   <Coins className="h-5 w-5 text-[#fde047]" />
                 </div>
                 <button
-                  onClick={() => setStakeAmount((rollBalance / 2).toString())}
+                  onClick={() => setStakeAmount((balance / 2).toString())}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-xs px-2 py-1 rounded bg-[#fde047]/20 text-[#fde047] hover:bg-[#fde047]/30 transition-colors border border-[#fde047]/30"
                 >
                   Half
@@ -423,35 +443,45 @@ export function GameInterface({
               <h3 className="font-semibold text-[#fde047]">Token Swap</h3>
             </div>
 
-            {/* Mint Tokens for Testing (only show if contract available) */}
-            {isContractAvailable && (
-              <div className="p-4 bg-[#1a1a1a]/50 rounded-lg border border-[#404040]/50">
+            {/* Balance & Testing Controls */}
+            <div className="space-y-3">
+              {/* Current Balance Display */}
+              <div className="p-4 bg-[#1a1a1a]/50 border border-[#404040]/30 rounded-lg">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-[#d4d4d4]">Test Tokens</p>
-                    <p className="text-xs text-[#a3a3a3]">Mint ROLL tokens for testing</p>
+                  <span className="text-sm text-[#d4d4d4]">Your ROLL Balance</span>
+                  <div className="flex items-center gap-2">
+                    <Coins className="h-4 w-4 text-[#fde047]" />
+                    <span className="font-bold text-[#ffffff] text-lg">{balance.toLocaleString()}</span>
                   </div>
-                  <Button
-                    onClick={() => mintTokens(1000)}
-                    disabled={isContractLoading}
-                    className="bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white"
-                  >
-                    {isContractLoading ? "Minting..." : "Mint 1000 ROLL"}
-                  </Button>
                 </div>
               </div>
-            )}
+
+              {/* Testing Controls - Only show if contract ready */}
+              {isContractReady && (
+                <Button
+                  onClick={handleMintTokens}
+                  disabled={isContractLoading}
+                  className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white"
+                  size="sm"
+                >
+                  {isContractLoading ? "Minting..." : "🪙 Mint 1000 ROLL (Testing)"}
+                </Button>
+              )}
+            </div>
 
             {/* Contract Status */}
-            {!isContractAvailable && (
+            {!isContractReady && (
               <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                <p className="text-sm text-orange-400">⚠️ Demo Mode - Smart contract not available</p>
+                <p className="text-sm text-orange-400">⚠️ Smart contract not ready - Check network connection</p>
               </div>
             )}
 
             {contractError && (
               <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                 <p className="text-sm text-red-400">❌ {contractError}</p>
+                <Button onClick={clearError} size="sm" variant="outline" className="mt-2 text-xs">
+                  Clear Error
+                </Button>
               </div>
             )}
 

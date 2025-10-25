@@ -64,38 +64,6 @@ export default function Home() {
     setCurrentPage("Home");
   };
 
-  const handleRoll = (stake: number, result: { diceValues: number[]; win: boolean; payout: number }) => {
-    // Update balance
-    if (result.win) {
-      setRollBalance(prev => prev - stake + result.payout);
-    } else {
-      setRollBalance(prev => prev - stake);
-    }
-
-    // Add to history
-    const record: GameRecord = {
-      id: Date.now().toString(),
-      timestamp: new Date(),
-      diceMode: result.diceValues.length,
-      diceValues: result.diceValues,
-      stake,
-      result: result.win ? "win" : "loss",
-      payout: result.payout,
-    };
-    setGameHistory(prev => [...prev, record]);
-  };
-
-  const handleSwap = (fromToken: "ETH" | "ROLL", amount: number) => {
-    const exchangeRate = 1000;
-    if (fromToken === "ETH") {
-      setEthBalance(prev => prev - amount);
-      setRollBalance(prev => prev + amount * exchangeRate);
-    } else {
-      setRollBalance(prev => prev - amount);
-      setEthBalance(prev => prev + amount / exchangeRate);
-    }
-  };
-
   const handleNavigate = async (page: string) => {
     // If already on the current page, do nothing
     if (page === currentPage) return;
@@ -167,19 +135,12 @@ export default function Home() {
 
         {currentPage === "Game" && (
           <div className="space-y-8">
-            <BalanceCards rollBalance={rollBalance} ethBalance={ethBalance} />
-            <GameInterface
-              rollBalance={rollBalance}
-              ethBalance={ethBalance}
-              onRoll={handleRoll}
-              onSwap={handleSwap}
-              onShowOverlay={showOverlay}
-              onHideOverlay={hideOverlay}
-            />
+            <BalanceCards />
+            <GameInterface onShowOverlay={showOverlay} onHideOverlay={hideOverlay} />
           </div>
         )}
 
-        {currentPage === "History" && <GameHistory records={gameHistory} />}
+        {currentPage === "History" && <GameHistory />}
 
         {currentPage === "Docs" && <Documentation onNavigate={handleNavigate} />}
       </main>

@@ -17,7 +17,7 @@ deployments/
 tmp/
 coverage/
 Encrypted Dice Roll Game/
-
+privatevoting-zama-app/
 # FHEVM specific
 fhevmTemp/
 

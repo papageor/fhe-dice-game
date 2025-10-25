@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { EncryptedDiceGameABI } from "../abi/EncryptedDiceGameABI";
+import { getEncryptedDiceGameAddress } from "../contracts/EncryptedDiceGameAddresses";
+import { useWagmiEthers } from "./wagmi/useWagmiEthers";
 import { buildParamsFromAbi, useFHEDecrypt, useFHEEncryption, useFhevm, useInMemoryStorage } from "@fhevm-sdk";
 import { formatEther, parseEther } from "viem";
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { EncryptedDiceGameABI } from "~~/abi/EncryptedDiceGameABI";
-import { getEncryptedDiceGameAddress } from "~~/contracts/EncryptedDiceGameAddresses";
-import { useWagmiEthers } from "~~/hooks/wagmi/useWagmiEthers";
 
 export type GameRecord = {
   id: number;

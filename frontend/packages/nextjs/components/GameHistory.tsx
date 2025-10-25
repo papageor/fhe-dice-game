@@ -1,41 +1,37 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useEncryptedDiceGame } from "../hooks/useEncryptedDiceGame";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-import { Calendar, TrendingDown, TrendingUp } from "lucide-react";
+import { Calendar, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
 
-interface GameRecord {
-  id: string;
-  timestamp: Date;
-  diceMode: number;
-  diceValues: number[];
-  stake: number;
-  result: "win" | "loss";
-  payout: number;
-}
-
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface GameHistoryProps {
-  records: GameRecord[];
+  // No props needed - data comes from contract
 }
 
-export function GameHistory({ records }: GameHistoryProps) {
-  const [isLoading, setIsLoading] = useState(true);
+export function GameHistory({}: GameHistoryProps) {
+  const { games, isLoading, refreshGames, isContractReady } = useEncryptedDiceGame();
 
+  // Auto-refresh games when component mounts
   useEffect(() => {
-    // Simulate loading data from blockchain
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (isContractReady) {
+      refreshGames();
+    }
+  }, [isContractReady, refreshGames]);
 
   const stats = {
-    totalGames: records.length,
-    wins: records.filter(r => r.result === "win").length,
-    losses: records.filter(r => r.result === "loss").length,
-    totalWagered: records.reduce((sum, r) => sum + r.stake, 0),
-    netProfit: records.reduce((sum, r) => sum + (r.payout - r.stake), 0),
+    totalGames: games.length,
+    wins: games.filter(g => g.result === "win").length,
+    losses: games.filter(g => g.result === "lose").length,
+    totalWagered: games.reduce((sum, g) => sum + (g.stake || 0), 0),
+    netProfit: games.reduce((sum, g) => {
+      const stake = g.stake || 0;
+      const payout = g.result === "win" ? stake * 1.95 : 0;
+      return sum + (payout - stake);
+    }, 0),
   };
 
   const winRate = stats.totalGames > 0 ? (stats.wins / stats.totalGames) * 100 : 0;
@@ -76,13 +72,31 @@ export function GameHistory({ records }: GameHistoryProps) {
 
         {/* History Table */}
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-          <div className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Calendar className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold">Game History</h2>
+          <div className="p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold">Game History</h2>
+              </div>
+              <Button
+                onClick={refreshGames}
+                disabled={isLoading || !isContractReady}
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
             </div>
 
-            {records.length === 0 ? (
+            {!isContractReady ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <div className="text-4xl mb-2">⚠️</div>
+                <div>Smart contract not ready</div>
+                <div className="text-sm">Please connect wallet and check network</div>
+              </div>
+            ) : games.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <div className="text-4xl mb-2">🎲</div>
                 <div>No games played yet</div>
@@ -98,31 +112,34 @@ export function GameHistory({ records }: GameHistoryProps) {
                       <TableHead>Dice</TableHead>
                       <TableHead>Sum</TableHead>
                       <TableHead>Stake</TableHead>
+                      <TableHead>Prediction</TableHead>
                       <TableHead>Result</TableHead>
                       <TableHead className="text-right">Profit/Loss</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {records
+                    {games
                       .slice()
                       .reverse()
-                      .map(record => {
-                        const sum = record.diceValues.reduce((a, b) => a + b, 0);
-                        const profitLoss = record.payout - record.stake;
+                      .map(game => {
+                        const sum = (game.diceValues || []).reduce((a: number, b: number) => a + b, 0);
+                        const stake = game.stake || 0;
+                        const payout = game.result === "win" ? stake * 1.95 : 0;
+                        const profitLoss = payout - stake;
 
                         return (
-                          <TableRow key={record.id} className="border-border hover:bg-secondary/30">
+                          <TableRow key={game.id} className="border-border hover:bg-secondary/30">
                             <TableCell className="text-muted-foreground">
-                              {record.timestamp.toLocaleTimeString()}
+                              {new Date(game.timestamp * 1000).toLocaleTimeString()}
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="bg-secondary/50">
-                                {record.diceMode} {record.diceMode === 1 ? "Die" : "Dice"}
+                                {game.diceCount} {game.diceCount === 1 ? "Die" : "Dice"}
                               </Badge>
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-1">
-                                {record.diceValues.map((val, i) => (
+                                {(game.diceValues || []).map((val: number, i: number) => (
                                   <span
                                     key={i}
                                     className="inline-flex items-center justify-center w-6 h-6 text-xs bg-white text-black rounded border border-gray-300"
@@ -142,13 +159,25 @@ export function GameHistory({ records }: GameHistoryProps) {
                                 {sum} {sum % 2 === 0 ? "Even" : "Odd"}
                               </Badge>
                             </TableCell>
-                            <TableCell>{record.stake.toFixed(2)}</TableCell>
+                            <TableCell>{stake.toFixed(2)} ROLL</TableCell>
                             <TableCell>
                               <Badge
-                                variant={record.result === "win" ? "default" : "destructive"}
-                                className={record.result === "win" ? "bg-green-500" : ""}
+                                variant="outline"
+                                className={
+                                  game.prediction === "even"
+                                    ? "bg-green-500/20 text-green-400"
+                                    : "bg-red-500/20 text-red-400"
+                                }
                               >
-                                {record.result === "win" ? "Win" : "Loss"}
+                                {game.prediction?.toUpperCase()}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={game.result === "win" ? "default" : "destructive"}
+                                className={game.result === "win" ? "bg-green-500" : ""}
+                              >
+                                {game.result === "win" ? "Win" : "Loss"}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">
@@ -162,7 +191,7 @@ export function GameHistory({ records }: GameHistoryProps) {
                                 )}
                                 <span className="font-semibold">
                                   {profitLoss >= 0 ? "+" : ""}
-                                  {profitLoss.toFixed(2)}
+                                  {profitLoss.toFixed(2)} ROLL
                                 </span>
                               </div>
                             </TableCell>
